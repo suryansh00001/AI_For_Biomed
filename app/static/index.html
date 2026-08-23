@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BraTS 2020 | Medical AI Segmentation & 3D Spatial Reconstruction</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Three.js and Plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+
+  <!-- Clinical Workstation Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-icon-box">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a4.5 4.5 0 0 0-4.5 4.5c0 .67.15 1.3.42 1.87A6 6 0 0 0 4 14c0 3.31 2.69 6 6 6h4c3.31 0 6-2.69 6-6a6 6 0 0 0-3.92-5.63c.27-.57.42-1.2.42-1.87A4.5 4.5 0 0 0 12 2Z"></path>
+          <path d="M12 2v20"></path>
+          <path d="M7 9a4 4 0 0 1 5-3.5"></path>
+          <path d="M12 18.5A4 4 0 0 1 7 15"></path>
+          <path d="M17 9a4 4 0 0 0-5-3.5"></path>
+          <path d="M12 18.5A4 4 0 0 0 17 15"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-title">
+          <span>BraTS Medical Intelligence</span>
+          <span class="brand-version">v2.4 Pro</span>
+        </div>
+        <span class="brand-subtitle">Neurosurgical Multi-Planar AI Segmentation & 3D Spatial Mesh Engine</span>
+      </div>
+    </div>
+
+    <div class="header-status-cluster">
+      <div class="system-badge">
+        <span class="status-pulse"></span>
+        <span>AI Inference Engine: Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-content">
+
+    <!-- Top Workflow & MRI Inference Controller -->
+    <section class="bezel-card workflow-panel">
+      <div class="bezel-inner">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <svg class="panel-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9M8 17l4 4 4-4"></path>
+            </svg>
+            <h2 class="panel-title">MRI Dataset & Inference Manager</h2>
+          </div>
+          <div class="tab-nav-cluster">
+            <button id="tab-dataset" class="tab-btn active">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+              </svg>
+              Repository Cases
+            </button>
+            <button id="tab-upload" class="tab-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path>
+              </svg>
+              Upload Patient Scans
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode A: Dataset Picker Form -->
+        <form id="dataset-form" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="input-label">Select Patient Case</label>
+            <select id="patient-select" class="select-input" style="min-width: 280px;">
+              <option value="BraTS20_Training_001">BraTS20_Training_001</option>
+            </select>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="input-label">Loaded Modalities</label>
+            <div class="modality-tags">
+              <span class="modality-tag">FLAIR</span>
+              <span class="modality-tag">T1ce</span>
+              <span class="modality-tag">T1</span>
+              <span class="modality-tag">T2</span>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-run-pipeline" class="btn-primary-action" style="margin-left: auto;">
+            <span>Execute AI Deep Learning Segmentation</span>
+            <div class="btn-icon-circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+        </form>
+
+        <!-- Mode B: Custom Patient Scans Upload Form -->
+        <form id="upload-form" style="display: none; flex-direction: column; gap: 14px;">
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <label class="input-label">Patient Case ID:</label>
+            <input type="text" id="custom-patient-name" class="text-input" placeholder="e.g. Case_Neurosurg_2026" value="Patient_Scan_01" style="min-width: 260px;">
+          </div>
+          <div class="upload-grid">
+            <div class="upload-card-box">
+              <span class="input-label" style="color: var(--accent-primary);">FLAIR Sequence (.nii / .gz) *</span>
+              <input type="file" id="upload-flair" accept=".nii,.nii.gz" class="file-input" required>
+            </div>
+            <div class="upload-card-box">
+              <span class="input-label">T1 Contrast (T1ce)</span>
+              <input type="file" id="upload-t1ce" accept=".nii,.nii.gz" class="file-input">
+            </div>
+            <div class="upload-card-box">
+              <span class="input-label">T1 Native (T1)</span>
+              <input type="file" id="upload-t1" accept=".nii,.nii.gz" class="file-input">
+            </div>
+            <div class="upload-card-box">
+              <span class="input-label">T2 Weighted (T2)</span>
+              <input type="file" id="upload-t2" accept=".nii,.nii.gz" class="file-input">
+            </div>
+          </div>
+          <button type="submit" id="btn-upload-submit" class="btn-primary-action" style="align-self: flex-end;">
+            <span>Process & Segment Uploaded Volumes</span>
+            <div class="btn-icon-circle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"></path>
+              </svg>
+            </div>
+          </button>
+        </form>
+
+        <!-- Pipeline Progress Status Banner -->
+        <div id="pipeline-status" class="pipeline-status-banner" style="display: none;">
+          <div class="status-pulse"></div>
+          <span id="status-text">Executing U-Net deep learning segmentation on multi-parametric MRI...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Medical Workspace Tri-Column Layout -->
+    <main class="workspace-grid">
+      
+      <!-- Column 1: Multi-Planar 2D Radiographic Viewer -->
+      <section class="bezel-card">
+        <div class="bezel-inner">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <svg class="panel-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <path d="m21 15-5-5L5 21"></path>
+              </svg>
+              <h3 class="panel-title">Multi-Planar 2D Slices</h3>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="mask-source-select" class="select-input" style="padding: 4px 8px; font-size: 0.74rem;">
+                <option value="model">AI Model Prediction</option>
+                <option value="ground_truth">Ground Truth Mask</option>
+                <option value="diff">AI vs GT Error Map</option>
+              </select>
+              <span id="plane-badge" class="badge-tag">AXIAL</span>
+            </div>
+          </div>
+
+          <!-- Anatomical Plane Selector -->
+          <div class="segmented-control">
+            <button class="btn active" data-plane="axial">Axial (Z)</button>
+            <button class="btn" data-plane="coronal">Coronal (Y)</button>
+            <button class="btn" data-plane="sagittal">Sagittal (X)</button>
+          </div>
+
+          <!-- MRI Modality Selector -->
+          <div class="segmented-control">
+            <button class="btn active" data-modality="flair">FLAIR</button>
+            <button class="btn" data-modality="t1ce">T1ce</button>
+            <button class="btn" data-modality="t1">T1</button>
+            <button class="btn" data-modality="t2">T2</button>
+          </div>
+
+          <!-- 2D Viewport Image with Radiographic HUD -->
+          <div class="viewport-frame viewport-frame-2d">
+            <img id="slice-image" src="" alt="MRI Radiographic Slice">
+            <div class="viewport-hud">
+              <div class="hud-top">
+                <span class="hud-badge accent">MAG: 1.0x</span>
+                <span class="hud-badge">DICOM 512x512</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slice Slider -->
+          <div class="control-slider-group">
+            <div class="slider-meta">
+              <span class="slider-name">Slice Position</span>
+              <span id="slice-val-display" class="slider-counter">75 / 155</span>
+            </div>
+            <input type="range" id="slice-slider" min="0" max="154" value="75">
+          </div>
+
+          <!-- Overlay Alpha Slider -->
+          <div class="control-slider-group">
+            <div class="slider-meta">
+              <span class="slider-name">Tumor Mask Opacity</span>
+              <span id="alpha-val-display" class="slider-counter">55%</span>
+            </div>
+            <input type="range" id="alpha-slider" min="0" max="100" value="55">
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 2: Interactive 3D WebGL / Spatial Scene -->
+      <section class="bezel-card">
+        <div class="bezel-inner">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <svg class="panel-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <h3 class="panel-title">3D Volumetric Mesh</h3>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="mesh-source-select" class="select-input" style="padding: 4px 8px; font-size: 0.74rem;">
+                <option value="model">AI Model 3D Mesh</option>
+                <option value="ground_truth">Ground Truth 3D Mesh</option>
+                <option value="compare">AI vs GT 3D Overlay</option>
+              </select>
+              <span class="badge-tag">WebGL</span>
+            </div>
+          </div>
+
+          <!-- 3D Canvas Viewport -->
+          <div class="viewport-frame viewport-frame-3d">
+            <canvas id="canvas-3d"></canvas>
+            <div class="viewport-hud">
+              <div class="hud-top">
+                <span id="hud-3d-badge" class="hud-badge accent">3D SOURCE: AI MODEL</span>
+                <span id="hud-3d-status" class="hud-badge">60 FPS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Actions Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-reset-3d" class="btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="22" y1="12" x2="18" y2="12"></line>
+                  <line x1="6" y1="12" x2="2" y2="12"></line>
+                  <line x1="12" y1="6" x2="12" y2="2"></line>
+                  <line x1="12" y1="22" x2="12" y2="18"></line>
+                </svg>
+                Reset Camera
+              </button>
+              <button id="btn-autorotate-3d" class="btn active">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                </svg>
+                Auto-Rotate
+              </button>
+              <button id="btn-wireframe-3d" class="btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                Wireframe
+              </button>
+            </div>
+            <button id="btn-reconstruct-3d" class="btn-accent-action">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Reconstruct Mesh
+            </button>
+          </div>
+
+          <!-- Brain Cortex Transparency Slider -->
+          <div class="control-slider-group">
+            <div class="slider-meta">
+              <span class="slider-name">Brain Cortex Opacity</span>
+              <span id="brain-opacity-display" class="slider-counter">30%</span>
+            </div>
+            <input type="range" id="brain-opacity-slider" min="5" max="100" value="30">
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 3: Clinical Quantification & Export Bridge -->
+      <aside class="sidebar-column bezel-card">
+        <div class="bezel-inner">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <svg class="panel-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <h3 class="panel-title">Clinical Volumetrics</h3>
+            </div>
+            <span class="badge-tag">BraTS Metrics</span>
+          </div>
+
+          <!-- AI Validation & Dice Scorecard -->
+          <div class="accuracy-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-inner); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="input-label" style="color: var(--accent-primary);">AI Validation Agreement</span>
+              <span id="kpi-dice" class="badge-tag" style="background: rgba(56, 189, 248, 0.15); color: #fff; font-size: 0.76rem;">Dice: 89.6%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
+              <span>Volume Discrepancy:</span>
+              <span id="kpi-mismatch" style="color: var(--necrotic-rose);">41.5 cm³</span>
+            </div>
+          </div>
+
+          <!-- KPI Metrics Bento Grid -->
+          <div class="metrics-bento-grid">
+            <div class="metric-cell">
+              <div class="metric-header">
+                <span class="metric-label">Brain Parenchyma</span>
+                <span class="metric-indicator-dot" style="background: var(--brain-slate);"></span>
+              </div>
+              <div class="metric-value" id="kpi-brain">1304.4 <span class="metric-unit">cm³</span></div>
+            </div>
+
+            <div class="metric-cell">
+              <div class="metric-header">
+                <span class="metric-label">Whole Tumor (WT)</span>
+                <span class="metric-indicator-dot" style="background: var(--edema-emerald);"></span>
+              </div>
+              <div class="metric-value" id="kpi-wt" style="color: var(--accent-primary);">209.8 <span class="metric-unit">cm³</span></div>
+            </div>
+
+            <div class="metric-cell">
+              <div class="metric-header">
+                <span class="metric-label">Tumor Core (TC)</span>
+                <span class="metric-indicator-dot" style="background: var(--enhancing-amber);"></span>
+              </div>
+              <div class="metric-value" id="kpi-tc" style="color: var(--enhancing-amber);">42.4 <span class="metric-unit">cm³</span></div>
+            </div>
+
+            <div class="metric-cell">
+              <div class="metric-header">
+                <span class="metric-label">Tumor Burden</span>
+                <span class="metric-indicator-dot" style="background: var(--necrotic-rose);"></span>
+              </div>
+              <div class="metric-value" id="kpi-burden" style="color: var(--necrotic-rose);">16.1 <span class="metric-unit">%</span></div>
+            </div>
+          </div>
+
+          <!-- Segmentation Sub-Region Layer Toggles -->
+          <div class="layer-section">
+            <span class="input-label" style="margin-top: 4px;">Anatomical Compartments</span>
+
+            <div class="layer-toggle-row">
+              <div class="layer-meta">
+                <span class="layer-color-pill" style="background: var(--brain-slate);"></span>
+                <div>
+                  <div class="layer-title">Brain Parenchyma</div>
+                  <div class="layer-subtext">Cortex surface structure</div>
+                </div>
+              </div>
+              <label class="switch-wrap">
+                <input type="checkbox" id="toggle-brain" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-toggle-row">
+              <div class="layer-meta">
+                <span class="layer-color-pill" style="background: var(--edema-emerald); box-shadow: 0 0 8px var(--edema-glow);"></span>
+                <div>
+                  <div class="layer-title">Peritumoral Edema</div>
+                  <div class="layer-subtext">Class 2 (ED)</div>
+                </div>
+              </div>
+              <label class="switch-wrap">
+                <input type="checkbox" id="toggle-edema" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-toggle-row">
+              <div class="layer-meta">
+                <span class="layer-color-pill" style="background: var(--necrotic-rose); box-shadow: 0 0 8px var(--necrotic-glow);"></span>
+                <div>
+                  <div class="layer-title">Necrotic / Core</div>
+                  <div class="layer-subtext">Class 1 (NCR/NET)</div>
+                </div>
+              </div>
+              <label class="switch-wrap">
+                <input type="checkbox" id="toggle-necrotic" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-toggle-row">
+              <div class="layer-meta">
+                <span class="layer-color-pill" style="background: var(--enhancing-amber); box-shadow: 0 0 8px var(--enhancing-glow);"></span>
+                <div>
+                  <div class="layer-title">Enhancing Tumor</div>
+                  <div class="layer-subtext">Class 4 (ET)</div>
+                </div>
+              </div>
+              <label class="switch-wrap">
+                <input type="checkbox" id="toggle-enhancing" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Unity & 3D Export Bridge -->
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+            <span class="input-label">3D Engine & VR Export</span>
+            <a id="download-glb-btn" href="#" class="btn-accent-action" style="width: 100%;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+              </svg>
+              Download .GLB Model (Unity / Web)
+            </a>
+            <a id="download-obj-btn" href="#" class="btn" style="width: 100%;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+              Download .OBJ Mesh Archive
+            </a>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

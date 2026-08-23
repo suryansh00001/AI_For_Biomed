@@ -1,0 +1,22 @@
+# Core Deep Learning & Scientific Computing
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.23.5
+scipy>=1.10.0
+scikit-image>=0.20.0
+nibabel>=5.0.0
+
+# 3D Mesh Processing & Spatial Computing
+trimesh[easy]>=3.20.0
+Pillow>=9.5.0
+
+# Web Application & Diagnostic Server
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Data Loading & Utilities
+kagglehub>=0.2.0
+tqdm>=4.65.0
+matplotlib>=3.7.0

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software or research artifacts, please cite it as below."
+title: "BraTS 2020 Medical AI & 3D Spatial Mesh Reconstruction Platform"
+authors:
+  - name: "BraTS Medical Intelligence Engineering"
+date-released: 2026-08-24
+version: 2.4.0
+license: MIT
+keywords:
+  - "deep-learning"
+  - "medical-imaging"
+  - "brain-tumor-segmentation"
+  - "brats-2020"
+  - "marching-cubes"
+  - "threejs"
+  - "unity3d"
+  - "pytorch"
+  - "neurosurgery-planning"

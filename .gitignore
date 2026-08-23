@@ -1,0 +1,68 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Virtual Environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# PyTorch Checkpoints & Large Data (preserve checkpoint dir structure)
+*.pth
+*.pt
+*.ckpt
+!checkpoints/best_unet2d_brats.pth
+!checkpoints/trained_brats_unet.pth
+
+# Dataset Directories
+BraTS2020_Training_Data/
+MICCAI_BraTS2020_TrainingData/
+user_uploads/*
+!user_uploads/.gitkeep
+
+# Exported 3D Large Models (keep sample / directory structure)
+exported_3d_models/*
+!exported_3d_models/.gitkeep
+
+# IDEs, Agents, & System
+.agents/
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.agent/
+.system_generated/
