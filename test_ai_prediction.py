@@ -7,6 +7,8 @@ from models.inference_engine import BraTSInferenceEngine
 from reconstruction.mesh_generator import BrainMeshReconstructor
 from reconstruction.exporter import MeshExporter
 
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
 def test_inference():
     data_dir = get_brats_data_directory()
     patient_id = "BraTS20_Training_002"
@@ -23,7 +25,7 @@ def test_inference():
     print(f"Input Raw MRI Scans loaded: shape = {flair.shape}")
 
     # 2. Initialize trained AI Deep Learning model
-    engine = BraTSInferenceEngine(checkpoint_path="d:/Brain tumorr/checkpoints/best_unet2d_brats.pth")
+    engine = BraTSInferenceEngine(checkpoint_path=os.path.join(PROJECT_ROOT, "checkpoints", "best_unet2d_brats.pth"))
 
     # 3. Predict 3D Tumor Segmentation & Brain Extraction
     pred_seg_3d, brain_mask_3d = engine.predict_volume_3d(flair, t1, t1ce, t2)
@@ -48,7 +50,7 @@ def test_inference():
     reconstructor = BrainMeshReconstructor(voxel_spacing=(1.0, 1.0, 1.0))
     meshes = reconstructor.reconstruct_full_patient_scene(flair, pred_seg_3d, center_at_origin=True)
 
-    exporter = MeshExporter(output_dir="d:/Brain tumorr/exported_3d_models")
+    exporter = MeshExporter(output_dir=os.path.join(PROJECT_ROOT, "exported_3d_models"))
     exports = exporter.export_patient_scene(f"{patient_id}_AI_PREDICTED", meshes)
     print("3D Model exported for Unity/WebGL at:", exports.get('composite_glb'))
 

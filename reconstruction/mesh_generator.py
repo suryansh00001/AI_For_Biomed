@@ -41,16 +41,16 @@ class BrainMeshReconstructor:
         if smooth_iterations > 0 and len(mesh.vertices) > 0:
             try:
                 trimesh.smoothing.filter_laplacian(mesh, iterations=smooth_iterations)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Mesh Smoothing] Warning: Laplacian smoothing failed ({e}). Using unsmoothed mesh.")
 
         # Decimate / simplify mesh if polygon count is very large
         if decimation_ratio < 1.0 and len(mesh.faces) > 2000:
             target_faces = max(1000, int(len(mesh.faces) * decimation_ratio))
             try:
-                mesh = mesh.simplify_quadric_decimation(target_faces)
-            except Exception:
-                pass
+                mesh = mesh.simplify_quadric_decimation(face_count=target_faces)
+            except Exception as e:
+                print(f"[Mesh Decimation] Warning: decimation failed ({e}). Keeping full-resolution mesh.")
 
         return mesh
 

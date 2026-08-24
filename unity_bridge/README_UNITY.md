@@ -8,7 +8,7 @@ This folder provides a complete workflow for loading and interacting with the 3D
 
 1. Open your Unity Project.
 2. In the Unity Project window, create a new folder named `BrainTumor3D`.
-3. Copy the exported patient folder (e.g. `d:/Brain tumorr/exported_3d_models/BraTS20_Training_001`) or drag the `.obj` / `.glb` files into your Unity `BrainTumor3D` folder:
+3. Copy the exported patient folder (e.g. `exported_3d_models/BraTS20_Training_001` from this repository) or drag the `.obj` / `.glb` files into your Unity `BrainTumor3D` folder:
    - `brain_cortex.obj`
    - `tumor_edema.obj`
    - `tumor_necrotic.obj`

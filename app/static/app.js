@@ -138,8 +138,8 @@ function load3DModel() {
   overlayGroup = null;
 
   if (hudBadge) {
-    if (state.meshSource === 'model') hudBadge.textContent = '3D: AI PREDICTION [189.2 cm³]';
-    else if (state.meshSource === 'ground_truth') hudBadge.textContent = '3D: GROUND TRUTH [212.0 cm³]';
+    if (state.meshSource === 'model') hudBadge.textContent = '3D: AI PREDICTION';
+    else if (state.meshSource === 'ground_truth') hudBadge.textContent = '3D: GROUND TRUTH';
     else if (state.meshSource === 'compare') hudBadge.textContent = '3D: AI (SOLID) + GT (WIREFRAME)';
   }
 
@@ -307,12 +307,16 @@ async function loadAnalytics() {
     document.getElementById('kpi-burden').innerHTML = `${data.tumor_burden_percent} <span class="metric-unit">%</span>`;
     
     const diceEl = document.getElementById('kpi-dice');
-    if (diceEl && data.dice_score_percent !== undefined) {
-      diceEl.textContent = `Dice: ${data.dice_score_percent}%`;
+    if (diceEl) {
+      diceEl.textContent = (data.dice_score_percent !== null && data.dice_score_percent !== undefined)
+        ? `Dice: ${data.dice_score_percent}%`
+        : 'Dice: n/a';
     }
     const mismatchEl = document.getElementById('kpi-mismatch');
-    if (mismatchEl && data.mismatch_cm3 !== undefined) {
-      mismatchEl.textContent = `${data.mismatch_cm3} cm³`;
+    if (mismatchEl) {
+      mismatchEl.textContent = (data.mismatch_cm3 !== null && data.mismatch_cm3 !== undefined)
+        ? `${data.mismatch_cm3} cm³`
+        : '-- cm³';
     }
   } catch (e) {
     console.error("Failed to load analytics:", e);

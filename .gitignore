@@ -43,7 +43,6 @@ venv.bak/
 *.pt
 *.ckpt
 !checkpoints/best_unet2d_brats.pth
-!checkpoints/trained_brats_unet.pth
 
 # Dataset Directories
 BraTS2020_Training_Data/

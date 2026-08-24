@@ -1,38 +1,52 @@
 import os
+import random
 import time
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
-from data_pipeline.dataset_loader import BraTS2DSliceDataset, get_brats_data_directory
+from torch.utils.data import DataLoader
+from data_pipeline.dataset_loader import BraTS2DSliceDataset, list_subject_dirs, get_brats_data_directory
 from models.unet2d import UNet2D
 from models.losses import CombinedDiceCELoss, compute_brats_dice_scores
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 
 def train_brats_model(
     epochs=10,
     batch_size=16,
     lr=1e-3,
     max_subjects=40,
-    checkpoint_dir="d:/Brain tumorr/checkpoints"
+    val_fraction=0.15,
+    seed=42,
+    checkpoint_dir=None
 ):
+    checkpoint_dir = checkpoint_dir or os.path.join(PROJECT_ROOT, "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[Training] Using compute device: {device}")
 
-    # 1. Dataset & DataLoader
-    print(f"[Training] Loading BraTS dataset (indexing up to {max_subjects} subjects)...")
-    full_dataset = BraTS2DSliceDataset(max_subjects=max_subjects, slice_step=3, filter_empty=True)
-    
-    val_size = max(1, int(0.15 * len(full_dataset)))
-    train_size = len(full_dataset) - val_size
-    train_ds, val_ds = random_split(full_dataset, [train_size, val_size])
+    # 1. Subject-level train/val split (no patient appears in both sets)
+    subjects = [os.path.basename(d) for d in list_subject_dirs(get_brats_data_directory())][:max_subjects]
+    rng = random.Random(seed)
+    rng.shuffle(subjects)
+    n_val = max(1, int(val_fraction * len(subjects)))
+    val_subjects = set(subjects[:n_val])
+    train_subjects = set(subjects[n_val:])
+    print(f"[Training] Subject-level split: {len(train_subjects)} train / {n_val} validation "
+          f"(validation: {sorted(val_subjects)})")
+
+    full_data_dir = get_brats_data_directory()
+    train_ds = BraTS2DSliceDataset(data_dir=full_data_dir, slice_step=3, filter_empty=True,
+                                   allowed_subjects=train_subjects)
+    val_ds = BraTS2DSliceDataset(data_dir=full_data_dir, slice_step=1, filter_empty=False,
+                                 allowed_subjects=val_subjects)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    print(f"[Training] Training slices: {train_size}, Validation slices: {val_size}")
+    print(f"[Training] Training slices: {len(train_ds)}, Validation slices: {len(val_ds)}")
 
-    # 2. Model, Loss, Optimizer
-    model = UNet2D(in_channels=4, num_classes=4, base_filters=32).to(device)
+    # 2. Model, Loss, Optimizer (base_filters=16 matches the shipped checkpoints)
+    model = UNet2D(in_channels=4, num_classes=4, base_filters=16).to(device)
     criterion = CombinedDiceCELoss(weight_ce=1.0, weight_dice=1.2)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-5)
@@ -78,20 +92,21 @@ def train_brats_model(
                 preds = torch.argmax(outputs, dim=1)
                 for p, t in zip(preds, masks):
                     d = compute_brats_dice_scores(p, t)
-                    dice_scores_list.append(d['dice_mean'])
+                    if d['dice_mean'] == d['dice_mean']:  # skip NaN (empty-empty regions)
+                        dice_scores_list.append(d['dice_mean'])
 
         val_loss /= max(1, len(val_loader))
         avg_val_dice = sum(dice_scores_list) / max(1, len(dice_scores_list))
         elapsed = time.time() - t0
 
-        print(f"Epoch [{epoch:02d}/{epochs:02d}] ({elapsed:.1f}s) | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Mean Dice: {avg_val_dice:.4f}")
+        print(f"Epoch [{epoch:02d}/{epochs:02d}] ({elapsed:.1f}s) | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val Mean Dice (tumor-bearing slices): {avg_val_dice:.4f}")
 
         history['train_loss'].append(train_loss)
         history['val_loss'].append(val_loss)
         history['val_dice'].append(avg_val_dice)
 
         # Save Best Model
-        if avg_val_dice >= best_val_dice:
+        if avg_val_dice >= best_val_dice and dice_scores_list:
             best_val_dice = avg_val_dice
             ckpt_path = os.path.join(checkpoint_dir, "best_unet2d_brats.pth")
             torch.save({
@@ -106,6 +121,7 @@ def train_brats_model(
     torch.save(model.state_dict(), final_path)
     print(f"\nTraining Complete! Final model saved to {final_path}")
     return model, history
+
 
 if __name__ == "__main__":
     train_brats_model(epochs=5, batch_size=8, max_subjects=20)

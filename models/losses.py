@@ -48,13 +48,15 @@ class CombinedDiceCELoss(nn.Module):
     """
     Composite Loss: Dice Loss + Cross-Entropy Loss.
     Addresses extreme class imbalance between healthy brain and small tumor cores.
+    Dice term excludes the background class (standard BraTS practice) so the
+    loss reflects foreground segmentation quality rather than background dominance.
     """
     def __init__(self, weight_ce=1.0, weight_dice=1.0, class_weights=None):
         super().__init__()
         self.weight_ce = weight_ce
         self.weight_dice = weight_dice
         self.ce = nn.CrossEntropyLoss(weight=class_weights)
-        self.dice = DiceLoss()
+        self.dice = DiceLoss(ignore_background=True)
 
     def forward(self, logits, targets):
         ce_loss = self.ce(logits, targets)
@@ -69,6 +71,10 @@ def compute_brats_dice_scores(pred_mask, true_mask):
       - ET (Enhancing Tumor): label {3}
     
     Inputs can be numpy arrays or torch tensors with continuous labels {0,1,2,3}.
+
+    Note: when both prediction and ground truth are empty for a region, the Dice
+    score is undefined and returned as NaN. Callers should skip non-finite values
+    when averaging (counting them as 1.0 inflates scores on tumor-free slices).
     """
     if isinstance(pred_mask, torch.Tensor):
         pred_mask = pred_mask.detach().cpu().numpy()
@@ -78,10 +84,11 @@ def compute_brats_dice_scores(pred_mask, true_mask):
     def dice_binary(p, t):
         p_bool = p.astype(bool)
         t_bool = t.astype(bool)
-        if not np.any(p_bool) and not np.any(t_bool):
-            return 1.0 # True negative perfect match
+        denom = p_bool.sum() + t_bool.sum()
+        if denom == 0:
+            return np.nan # Undefined: nothing predicted and nothing present
         intersection = np.logical_and(p_bool, t_bool).sum()
-        return (2.0 * intersection) / (p_bool.sum() + t_bool.sum() + 1e-6)
+        return (2.0 * intersection) / denom
 
     # WT: 1, 2, 3
     pred_wt = np.isin(pred_mask, [1, 2, 3])
@@ -98,9 +105,12 @@ def compute_brats_dice_scores(pred_mask, true_mask):
     true_et = (true_mask == 3)
     dice_et = dice_binary(pred_et, true_et)
 
+    valid_scores = [s for s in (dice_wt, dice_tc, dice_et) if np.isfinite(s)]
+    dice_mean = float(np.mean(valid_scores)) if valid_scores else float('nan')
+
     return {
         'dice_wt': float(dice_wt),
         'dice_tc': float(dice_tc),
         'dice_et': float(dice_et),
-        'dice_mean': float((dice_wt + dice_tc + dice_et) / 3.0)
+        'dice_mean': dice_mean
     }

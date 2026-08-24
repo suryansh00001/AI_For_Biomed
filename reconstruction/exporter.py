@@ -35,8 +35,10 @@ class MeshExporter:
     """
     Exports 3D brain and tumor meshes to Unity-compatible formats (.OBJ, .GLTF/.GLB, .STL).
     """
-    def __init__(self, output_dir="d:/Brain tumorr/exported_3d_models"):
-        self.output_dir = output_dir
+    def __init__(self, output_dir=None):
+        self.output_dir = output_dir or os.path.join(
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "exported_3d_models"
+        )
         os.makedirs(self.output_dir, exist_ok=True)
 
     def export_patient_scene(self, patient_id, meshes_dict, suffix=""):
@@ -100,12 +102,6 @@ class MeshExporter:
             scene.export(glb_path, file_type='glb')
             exported_files['composite_glb'] = glb_path
             metadata['exported_files'].append(glb_path)
-            
-            # Also keep default fallback if suffix is present
-            if suffix:
-                fallback_glb = os.path.join(patient_folder, f"{patient_id}_composite.glb")
-                if not os.path.exists(fallback_glb) or suffix == "_model":
-                    scene.export(fallback_glb, file_type='glb')
 
         # 3. Save metadata manifest
         manifest_filename = f"manifest{suffix}.json" if suffix else "manifest.json"

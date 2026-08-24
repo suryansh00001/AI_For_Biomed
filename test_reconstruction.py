@@ -6,6 +6,8 @@ from data_pipeline.dataset_loader import get_brats_data_directory
 from reconstruction.mesh_generator import BrainMeshReconstructor
 from reconstruction.exporter import MeshExporter
 
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
 def run_test():
     data_dir = get_brats_data_directory()
     patient_dir = os.path.join(data_dir, "BraTS20_Training_001")
@@ -37,7 +39,7 @@ def run_test():
     meshes = reconstructor.reconstruct_full_patient_scene(flair_vol, seg_vol, center_at_origin=True)
 
     # Export to .OBJ, .STL, and .GLB
-    exporter = MeshExporter(output_dir="d:/Brain tumorr/exported_3d_models")
+    exporter = MeshExporter(output_dir=os.path.join(PROJECT_ROOT, "exported_3d_models"))
     exported = exporter.export_patient_scene(subj_id, meshes)
 
     print("\n--- 3D Reconstruction & Export Summary ---")
