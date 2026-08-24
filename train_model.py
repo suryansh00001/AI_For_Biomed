@@ -11,7 +11,8 @@ from data_pipeline.dataset_loader import get_brats_data_directory, list_subject_
 from models.unet2d import UNet2D
 from models.losses import CombinedDiceCELoss, compute_brats_dice_scores
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# This script lives at the repository root, so its directory IS the project root.
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 class BraTSTumorSliceDataset(Dataset):

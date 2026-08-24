@@ -65,3 +65,6 @@ exported_3d_models/*
 Thumbs.db
 .agent/
 .system_generated/
+
+# Local weight backups
+*.pth.bak

@@ -146,12 +146,12 @@ Measured results (BraTS region Dice, 4 held-out subjects):
 
 | Region | Dice (mean ± std) |
 | :--- | :---: |
-| **Whole Tumor (WT)** | 0.831 ± 0.027 |
-| **Tumor Core (TC)** | 0.731 ± 0.204 |
-| **Enhancing Tumor (ET)** | 0.728 ± 0.128 |
+| **Whole Tumor (WT)** | 0.858 ± 0.015 |
+| **Tumor Core (TC)** | 0.787 ± 0.113 |
+| **Enhancing Tumor (ET)** | 0.713 ± 0.091 |
 
 Context and caveats:
-- The model is small (~2M params) and was trained on only ~20 subjects; TC/ET variance is high (one hard case scores ~0.38 TC). These figures are **not comparable to BraTS challenge winners** (which use ensembles of large 3D networks on 300+ subjects).
+- The model is small (~2M params) and was trained on only ~20 subjects; TC/ET variance is still notable. These figures are **not comparable to BraTS challenge winners** (which use ensembles of large 3D networks on 300+ subjects).
 - Metrics are computed only where the region is non-empty in prediction or ground truth; empty-empty cases are excluded rather than counted as perfect.
 
 ---
