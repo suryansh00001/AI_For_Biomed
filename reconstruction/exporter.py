@@ -73,6 +73,11 @@ class MeshExporter:
             mesh.visual.vertex_colors = np.tile(rgba, (len(mesh.vertices), 1))
             mesh.metadata['name'] = layer_name
 
+            # Decimation can drop normals; without them WebGL/Unity shade the
+            # surface black because lighting has no surface direction.
+            if mesh.vertex_normals is None or len(mesh.vertex_normals) != len(mesh.vertices):
+                mesh.compute_vertex_normals()
+
             # Export individual OBJ
             obj_name = f"{layer_name}{suffix}.obj" if suffix else f"{layer_name}.obj"
             obj_path = os.path.join(patient_folder, obj_name)

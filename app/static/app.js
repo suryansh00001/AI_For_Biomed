@@ -13,7 +13,8 @@ const state = {
   showEnhancing: true,
   autoRotate: true,
   brainOpacity: 0.30,
-  wireframe: false
+  wireframe: false,
+  volumeShape: [240, 240, 155]  // updated from /api/analytics per patient
 };
 
 // 3D Scene globals
@@ -31,6 +32,8 @@ const alphaValDisplay = document.getElementById('alpha-val-display');
 const brainOpacitySlider = document.getElementById('brain-opacity-slider');
 const brainOpacityDisplay = document.getElementById('brain-opacity-display');
 const planeBadge = document.getElementById('plane-badge');
+const pipelineStatus = document.getElementById('pipeline-status');
+const statusText = document.getElementById('status-text');
 
 const toggleBrain = document.getElementById('toggle-brain');
 const toggleEdema = document.getElementById('toggle-edema');
@@ -44,6 +47,53 @@ const btnReconstruct = document.getElementById('btn-reconstruct-3d');
 const downloadGlbBtn = document.getElementById('download-glb-btn');
 const downloadObjBtn = document.getElementById('download-obj-btn');
 
+// ------------------------------------------------------------------ //
+// UI helpers
+// ------------------------------------------------------------------ //
+
+let bannerTimer = null;
+function showBanner(text, kind = 'info', autoHideMs = 4000) {
+  if (!pipelineStatus || !statusText) return;
+  pipelineStatus.style.display = 'flex';
+  pipelineStatus.classList.toggle('error', kind === 'error');
+  pipelineStatus.classList.toggle('warning', kind === 'warning');
+  statusText.textContent = text;
+  clearTimeout(bannerTimer);
+  if (autoHideMs) bannerTimer = setTimeout(() => { pipelineStatus.style.display = 'none'; }, autoHideMs);
+}
+
+async function fetchJson(url, options) {
+  const res = await fetch(url, options);
+  let data = null;
+  try { data = await res.json(); } catch (_) { /* non-JSON body */ }
+  if (!res.ok) {
+    const detail = data && (data.detail || data.message);
+    throw new Error(typeof detail === 'string' ? detail : `Request failed (${res.status})`);
+  }
+  return data;
+}
+
+function setSliceLoading(isLoading) {
+  sliceImg.classList.toggle('loading', isLoading);
+}
+
+async function checkEngineHealth() {
+  const badge = document.getElementById('engine-status');
+  const text = document.getElementById('engine-status-text');
+  try {
+    const d = await fetchJson('/api/health');
+    badge.classList.remove('checking', 'offline');
+    text.textContent = d.model_loaded
+      ? `AI Engine Online · ${String(d.device).toUpperCase()}`
+      : 'AI Model Not Loaded';
+    if (!d.model_loaded) badge.classList.add('offline');
+  } catch (_) {
+    badge.classList.remove('checking');
+    badge.classList.add('offline');
+    text.textContent = 'Backend Unreachable';
+  }
+}
+
 // Initialize
 window.addEventListener('DOMContentLoaded', async () => {
   initThreeJS();
@@ -52,6 +102,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   update2DSlice();
   load3DModel();
   loadAnalytics();
+  checkEngineHealth();
+
+  sliceImg.addEventListener('load', () => setSliceLoading(false));
+  sliceImg.addEventListener('error', () => setSliceLoading(false));
 });
 
 // Three.js Setup
@@ -68,6 +122,7 @@ function initThreeJS() {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
 
@@ -80,6 +135,9 @@ function initThreeJS() {
   // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambientLight);
+
+  const hemiLight = new THREE.HemisphereLight(0xcfe4ff, 0x0a0f18, 0.7);
+  scene.add(hemiLight);
 
   const keyLight = new THREE.DirectionalLight(0x38bdf8, 1.4);
   keyLight.position.set(120, 200, 100);
@@ -113,10 +171,18 @@ function initThreeJS() {
 let currentLoadId = 0;
 let overlayGroup = null;
 
+function set3DStatus(text, isError = false) {
+  const el = document.getElementById('hud-3d-status');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('error', isError);
+}
+
 // Load 3D Model (.GLB)
 function load3DModel() {
   const loadId = ++currentLoadId;
   const hudBadge = document.getElementById('hud-3d-badge');
+  set3DStatus('LOADING MESH…');
 
   function cleanupGroup(group) {
     if (!group) return;
@@ -151,51 +217,41 @@ function load3DModel() {
     if (loadId !== currentLoadId) return;
 
     currentModelGroup = gltf.scene;
+    set3DStatus('READY');
 
-    // Apply refined medical shaders & materials
+    // Apply refined medical shaders & materials.
+    // Primary color source = the per-layer vertex colors baked into the GLB
+    // (always correct); name matching only adds per-layer finishing touches.
     currentModelGroup.traverse((child) => {
       if (child.isMesh) {
         const name = (child.name || '').toLowerCase();
-        
+
+        // Legacy exports may lack normals -> lighting renders black without them
+        if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          vertexColors: !!child.geometry.attributes.color,
+          roughness: 0.45,
+          metalness: 0.05
+        });
+
         if (name.includes('brain') || name.includes('cortex')) {
-          child.material = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(0x94a3b8),
-            transparent: true,
-            opacity: state.brainOpacity,
-            roughness: 0.15,
-            transmission: 0.65,
-            thickness: 1.4,
-            wireframe: state.wireframe,
-            depthWrite: false
-          });
+          mat.transparent = true;
+          mat.opacity = state.brainOpacity;
+          mat.depthWrite = false;
         } else if (name.includes('edema')) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0x10b981),
-            roughness: 0.3,
-            metalness: 0.1,
-            emissive: new THREE.Color(0x047857),
-            emissiveIntensity: 0.7,
-            wireframe: state.wireframe
-          });
+          mat.emissive = new THREE.Color(0x047857);
+          mat.emissiveIntensity = 0.35;
         } else if (name.includes('necrotic')) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0xf43f5e),
-            roughness: 0.35,
-            metalness: 0.2,
-            emissive: new THREE.Color(0xbe123c),
-            emissiveIntensity: 0.85,
-            wireframe: state.wireframe
-          });
+          mat.emissive = new THREE.Color(0xbe123c);
+          mat.emissiveIntensity = 0.35;
         } else if (name.includes('enhancing')) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0xf59e0b),
-            roughness: 0.2,
-            metalness: 0.35,
-            emissive: new THREE.Color(0xb45309),
-            emissiveIntensity: 1.25,
-            wireframe: state.wireframe
-          });
+          mat.emissive = new THREE.Color(0xb45309);
+          mat.emissiveIntensity = 0.45;
         }
+
+        child.material = mat;
       }
     });
 
@@ -229,6 +285,7 @@ function load3DModel() {
     }
   }, undefined, (err) => {
     console.warn("3D Model load error:", err);
+    if (loadId === currentLoadId) set3DStatus('MESH UNAVAILABLE', true);
   });
 }
 
@@ -272,8 +329,14 @@ function update2DSlice() {
     alpha: state.alpha
   });
 
+  setSliceLoading(true);
   sliceImg.src = `/api/slice?${params.toString()}`;
   sliceValDisplay.textContent = `${state.sliceIdx} / ${sliceSlider.max}`;
+
+  const hudPatient = document.getElementById('hud-patient');
+  const hudSlice = document.getElementById('hud-slice-info');
+  if (hudPatient) hudPatient.textContent = state.patientId.toUpperCase();
+  if (hudSlice) hudSlice.textContent = `${state.modality.toUpperCase()} · SLICE ${state.sliceIdx}`;
 }
 
 // Patient List & Analytics
@@ -299,8 +362,13 @@ async function loadPatientList() {
 
 async function loadAnalytics() {
   try {
-    const res = await fetch(`/api/analytics/${state.patientId}?source=${state.maskSource}`);
-    const data = await res.json();
+    const data = await fetchJson(`/api/analytics/${state.patientId}?source=${state.maskSource}`);
+
+    if (Array.isArray(data.volume_shape) && data.volume_shape.length === 3) {
+      state.volumeShape = data.volume_shape;
+      syncSliderBounds();
+    }
+
     document.getElementById('kpi-brain').innerHTML = `${data.brain_volume_cm3} <span class="metric-unit">cm³</span>`;
     document.getElementById('kpi-wt').innerHTML = `${data.whole_tumor_cm3} <span class="metric-unit">cm³</span>`;
     document.getElementById('kpi-tc').innerHTML = `${(data.necrotic_cm3 + data.enhancing_cm3).toFixed(1)} <span class="metric-unit">cm³</span>`;
@@ -328,6 +396,17 @@ function updateDownloadLinks() {
   if (downloadObjBtn) downloadObjBtn.href = `/api/model3d/${state.patientId}/download/obj?source=${state.meshSource}`;
 }
 
+// Keeps the slice slider range in sync with the actual volume dimensions
+function syncSliderBounds() {
+  const [x, y, z] = state.volumeShape;
+  const max = state.plane === 'axial' ? z - 1 : (state.plane === 'coronal' ? y - 1 : x - 1);
+  sliceSlider.max = max;
+  if (state.sliceIdx > max) {
+    state.sliceIdx = Math.floor(max / 2);
+    sliceSlider.value = state.sliceIdx;
+  }
+}
+
 // Event Bindings
 function bindEvents() {
   // Tab Switching (Dataset vs Upload)
@@ -335,8 +414,6 @@ function bindEvents() {
   const tabUpload = document.getElementById('tab-upload');
   const datasetForm = document.getElementById('dataset-form');
   const uploadForm = document.getElementById('upload-form');
-  const pipelineStatus = document.getElementById('pipeline-status');
-  const statusText = document.getElementById('status-text');
 
   if (tabDataset && tabUpload) {
     tabDataset.addEventListener('click', () => {
@@ -360,26 +437,19 @@ function bindEvents() {
       e.preventDefault();
       const btn = document.getElementById('btn-run-pipeline');
       btn.disabled = true;
-      pipelineStatus.style.display = 'flex';
-      statusText.textContent = `Processing ${state.patientId}: Executing Deep Learning U-Net on raw multi-modal MRI...`;
+      showBanner(`Processing ${state.patientId}: running AI segmentation on multi-parametric MRI…`, 'info', 0);
 
       try {
         const formData = new FormData();
         formData.append('patient_id', state.patientId);
+        await fetchJson('/api/run-ai-pipeline', { method: 'POST', body: formData });
 
-        const res = await fetch('/api/run-ai-pipeline', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        
-        statusText.textContent = `AI Segmentation & 3D Reconstruction complete for ${state.patientId}.`;
+        showBanner(`AI segmentation & 3D reconstruction complete for ${state.patientId}.`);
         update2DSlice();
         load3DModel();
         loadAnalytics();
-        setTimeout(() => { pipelineStatus.style.display = 'none'; }, 4000);
       } catch (err) {
-        statusText.textContent = `Error: ${err.message}`;
+        showBanner(`Pipeline failed: ${err.message}`, 'error', 8000);
       } finally {
         btn.disabled = false;
       }
@@ -398,13 +468,12 @@ function bindEvents() {
       const t2File = document.getElementById('upload-t2').files[0];
 
       if (!flairFile) {
-        alert("Please select at least a FLAIR MRI scan (.nii or .nii.gz)");
+        showBanner('Select at least a FLAIR scan (.nii or .nii.gz) to continue.', 'error');
         return;
       }
 
       btn.disabled = true;
-      pipelineStatus.style.display = 'flex';
-      statusText.textContent = `Uploading MRI scans and running segmentation for ${patientName}...`;
+      showBanner(`Uploading MRI scans and running segmentation for ${patientName}…`, 'info', 0);
 
       try {
         const formData = new FormData();
@@ -414,23 +483,22 @@ function bindEvents() {
         if (t1File) formData.append('t1_file', t1File);
         if (t2File) formData.append('t2_file', t2File);
 
-        const res = await fetch('/api/upload-mri', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
+        const data = await fetchJson('/api/upload-mri', { method: 'POST', body: formData });
 
         state.patientId = data.patient_id;
         await loadPatientList();
         patientSelect.value = state.patientId;
+
+        if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+          showBanner(data.warnings[0], 'warning', 10000);
+        } else {
+          showBanner(`Segmentation & reconstruction complete for ${patientName}.`);
+        }
         update2DSlice();
         load3DModel();
         loadAnalytics();
-
-        statusText.textContent = `Successfully segmented & reconstructed ${patientName}.`;
-        setTimeout(() => { pipelineStatus.style.display = 'none'; }, 4000);
       } catch (err) {
-        statusText.textContent = `Upload failed: ${err.message}`;
+        showBanner(`Upload failed: ${err.message}`, 'error', 8000);
       } finally {
         btn.disabled = false;
       }
@@ -472,12 +540,7 @@ function bindEvents() {
       state.plane = btn.getAttribute('data-plane');
       planeBadge.textContent = state.plane.toUpperCase();
 
-      if (state.plane === 'axial') {
-        sliceSlider.max = 154;
-        state.sliceIdx = Math.min(state.sliceIdx, 154);
-      } else {
-        sliceSlider.max = 239;
-      }
+      syncSliderBounds();
       sliceSlider.value = state.sliceIdx;
       update2DSlice();
     });
@@ -551,13 +614,16 @@ function bindEvents() {
   btnReconstruct.addEventListener('click', async () => {
     btnReconstruct.disabled = true;
     const origHtml = btnReconstruct.innerHTML;
-    btnReconstruct.innerHTML = `<span>Processing...</span>`;
+    btnReconstruct.innerHTML = `<span>Processing…</span>`;
+    set3DStatus('REBUILDING MESH…');
     try {
-      await fetch(`/api/reconstruct/${state.patientId}?source=${state.meshSource}`, { method: 'POST' });
+      await fetchJson(`/api/reconstruct/${state.patientId}?source=${state.meshSource}`, { method: 'POST' });
       load3DModel();
       loadAnalytics();
     } catch (e) {
       console.error(e);
+      set3DStatus('RECONSTRUCTION FAILED', true);
+      showBanner(`3D reconstruction failed: ${e.message}`, 'error', 8000);
     } finally {
       btnReconstruct.disabled = false;
       btnReconstruct.innerHTML = origHtml;

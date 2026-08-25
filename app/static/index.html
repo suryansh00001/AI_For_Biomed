@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Research workstation for BraTS 2020 brain tumor MRI segmentation and 3D mesh reconstruction. Not for clinical use.">
   <title>BraTS 2020 | Medical AI Segmentation & 3D Spatial Reconstruction</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230d1117'/%3E%3Cpath d='M12 4a3.5 3.5 0 0 0-3.5 3.5c0 .5.1 1 .3 1.4A4.7 4.7 0 0 0 5.5 13.5c0 2.8 2.2 5 5 5h3a5 5 0 0 0 5-5 4.7 4.7 0 0 0-3.3-4.6c.2-.4.3-.9.3-1.4A3.5 3.5 0 0 0 12 4Z' fill='%2338bdf8'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/styles.css">
   <!-- Three.js and Plugins -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -28,16 +30,16 @@
       <div class="brand-text">
         <div class="brand-title">
           <span>BraTS Medical Intelligence</span>
-          <span class="brand-version">v2.4 Pro</span>
+          <span class="brand-version">Research Build</span>
         </div>
-        <span class="brand-subtitle">Neurosurgical Multi-Planar AI Segmentation & 3D Spatial Mesh Engine</span>
+        <span class="brand-subtitle">Multi-planar MRI segmentation & 3D reconstruction workstation</span>
       </div>
     </div>
 
     <div class="header-status-cluster">
-      <div class="system-badge">
+      <div id="engine-status" class="system-badge checking">
         <span class="status-pulse"></span>
-        <span>AI Inference Engine: Online</span>
+        <span id="engine-status-text">Checking engine…</span>
       </div>
     </div>
   </header>
@@ -56,13 +58,13 @@
             <h2 class="panel-title">MRI Dataset & Inference Manager</h2>
           </div>
           <div class="tab-nav-cluster">
-            <button id="tab-dataset" class="tab-btn active">
+            <button id="tab-dataset" type="button" class="tab-btn active">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
               </svg>
               Repository Cases
             </button>
-            <button id="tab-upload" class="tab-btn">
+            <button id="tab-upload" type="button" class="tab-btn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path>
               </svg>
@@ -72,16 +74,16 @@
         </div>
 
         <!-- Mode A: Dataset Picker Form -->
-        <form id="dataset-form" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label class="input-label">Select Patient Case</label>
+        <form id="dataset-form" class="dataset-form">
+          <div class="form-field">
+            <label class="input-label" for="patient-select">Select Patient Case</label>
             <select id="patient-select" class="select-input" style="min-width: 280px;">
               <option value="BraTS20_Training_001">BraTS20_Training_001</option>
             </select>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label class="input-label">Loaded Modalities</label>
+          <div class="form-field">
+            <span class="input-label">Required Modalities</span>
             <div class="modality-tags">
               <span class="modality-tag">FLAIR</span>
               <span class="modality-tag">T1ce</span>
@@ -90,8 +92,8 @@
             </div>
           </div>
 
-          <button type="submit" id="btn-run-pipeline" class="btn-primary-action" style="margin-left: auto;">
-            <span>Execute AI Deep Learning Segmentation</span>
+          <button type="submit" id="btn-run-pipeline" class="btn-primary-action form-push-right">
+            <span>Run AI Segmentation</span>
             <div class="btn-icon-circle">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7"></path>
@@ -101,9 +103,9 @@
         </form>
 
         <!-- Mode B: Custom Patient Scans Upload Form -->
-        <form id="upload-form" style="display: none; flex-direction: column; gap: 14px;">
-          <div style="display: flex; gap: 16px; align-items: center;">
-            <label class="input-label">Patient Case ID:</label>
+        <form id="upload-form" class="upload-form">
+          <div class="upload-name-row">
+            <label class="input-label" for="custom-patient-name">Patient Case ID:</label>
             <input type="text" id="custom-patient-name" class="text-input" placeholder="e.g. Case_Neurosurg_2026" value="Patient_Scan_01" style="min-width: 260px;">
           </div>
           <div class="upload-grid">
@@ -124,7 +126,7 @@
               <input type="file" id="upload-t2" accept=".nii,.nii.gz" class="file-input">
             </div>
           </div>
-          <button type="submit" id="btn-upload-submit" class="btn-primary-action" style="align-self: flex-end;">
+          <button type="submit" id="btn-upload-submit" class="btn-primary-action upload-submit">
             <span>Process & Segment Uploaded Volumes</span>
             <div class="btn-icon-circle">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -135,9 +137,9 @@
         </form>
 
         <!-- Pipeline Progress Status Banner -->
-        <div id="pipeline-status" class="pipeline-status-banner" style="display: none;">
+        <div id="pipeline-status" class="pipeline-status-banner" style="display: none;" role="status" aria-live="polite">
           <div class="status-pulse"></div>
-          <span id="status-text">Executing U-Net deep learning segmentation on multi-parametric MRI...</span>
+          <span id="status-text">Running AI segmentation on multi-parametric MRI…</span>
         </div>
       </div>
     </section>
@@ -158,7 +160,7 @@
               <h3 class="panel-title">Multi-Planar 2D Slices</h3>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <select id="mask-source-select" class="select-input" style="padding: 4px 8px; font-size: 0.74rem;">
+              <select id="mask-source-select" class="select-input panel-select" aria-label="Mask source">
                 <option value="model">AI Model Prediction</option>
                 <option value="ground_truth">Ground Truth Mask</option>
                 <option value="diff">AI vs GT Error Map</option>
@@ -168,27 +170,27 @@
           </div>
 
           <!-- Anatomical Plane Selector -->
-          <div class="segmented-control">
-            <button class="btn active" data-plane="axial">Axial (Z)</button>
-            <button class="btn" data-plane="coronal">Coronal (Y)</button>
-            <button class="btn" data-plane="sagittal">Sagittal (X)</button>
+          <div class="segmented-control" role="group" aria-label="Anatomical plane">
+            <button type="button" class="btn active" data-plane="axial">Axial (Z)</button>
+            <button type="button" class="btn" data-plane="coronal">Coronal (Y)</button>
+            <button type="button" class="btn" data-plane="sagittal">Sagittal (X)</button>
           </div>
 
           <!-- MRI Modality Selector -->
-          <div class="segmented-control">
-            <button class="btn active" data-modality="flair">FLAIR</button>
-            <button class="btn" data-modality="t1ce">T1ce</button>
-            <button class="btn" data-modality="t1">T1</button>
-            <button class="btn" data-modality="t2">T2</button>
+          <div class="segmented-control" role="group" aria-label="MRI modality">
+            <button type="button" class="btn active" data-modality="flair">FLAIR</button>
+            <button type="button" class="btn" data-modality="t1ce">T1ce</button>
+            <button type="button" class="btn" data-modality="t1">T1</button>
+            <button type="button" class="btn" data-modality="t2">T2</button>
           </div>
 
           <!-- 2D Viewport Image with Radiographic HUD -->
           <div class="viewport-frame viewport-frame-2d">
-            <img id="slice-image" src="" alt="MRI Radiographic Slice">
+            <img id="slice-image" src="" alt="MRI radiographic slice with segmentation overlay">
             <div class="viewport-hud">
               <div class="hud-top">
-                <span class="hud-badge accent">MAG: 1.0x</span>
-                <span class="hud-badge">DICOM 512x512</span>
+                <span id="hud-patient" class="hud-badge accent">—</span>
+                <span id="hud-slice-info" class="hud-badge">—</span>
               </div>
             </div>
           </div>
@@ -199,7 +201,7 @@
               <span class="slider-name">Slice Position</span>
               <span id="slice-val-display" class="slider-counter">75 / 155</span>
             </div>
-            <input type="range" id="slice-slider" min="0" max="154" value="75">
+            <input type="range" id="slice-slider" min="0" max="154" value="75" aria-label="Slice position">
           </div>
 
           <!-- Overlay Alpha Slider -->
@@ -208,7 +210,7 @@
               <span class="slider-name">Tumor Mask Opacity</span>
               <span id="alpha-val-display" class="slider-counter">55%</span>
             </div>
-            <input type="range" id="alpha-slider" min="0" max="100" value="55">
+            <input type="range" id="alpha-slider" min="0" max="100" value="55" aria-label="Tumor mask opacity">
           </div>
         </div>
       </section>
@@ -226,7 +228,7 @@
               <h3 class="panel-title">3D Volumetric Mesh</h3>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <select id="mesh-source-select" class="select-input" style="padding: 4px 8px; font-size: 0.74rem;">
+              <select id="mesh-source-select" class="select-input panel-select" aria-label="3D mesh source">
                 <option value="model">AI Model 3D Mesh</option>
                 <option value="ground_truth">Ground Truth 3D Mesh</option>
                 <option value="compare">AI vs GT 3D Overlay</option>
@@ -241,15 +243,15 @@
             <div class="viewport-hud">
               <div class="hud-top">
                 <span id="hud-3d-badge" class="hud-badge accent">3D SOURCE: AI MODEL</span>
-                <span id="hud-3d-status" class="hud-badge">60 FPS</span>
+                <span id="hud-3d-status" class="hud-badge">LOADING…</span>
               </div>
             </div>
           </div>
 
           <!-- 3D Actions Bar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <div style="display: flex; gap: 6px;">
-              <button id="btn-reset-3d" class="btn">
+          <div class="actions-bar">
+            <div class="actions-bar-group">
+              <button id="btn-reset-3d" type="button" class="btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="22" y1="12" x2="18" y2="12"></line>
@@ -259,13 +261,13 @@
                 </svg>
                 Reset Camera
               </button>
-              <button id="btn-autorotate-3d" class="btn active">
+              <button id="btn-autorotate-3d" type="button" class="btn active">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
                 </svg>
                 Auto-Rotate
               </button>
-              <button id="btn-wireframe-3d" class="btn">
+              <button id="btn-wireframe-3d" type="button" class="btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                   <polyline points="2 17 12 22 22 17"></polyline>
@@ -274,7 +276,7 @@
                 Wireframe
               </button>
             </div>
-            <button id="btn-reconstruct-3d" class="btn-accent-action">
+            <button id="btn-reconstruct-3d" type="button" class="btn-accent-action">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
@@ -288,7 +290,7 @@
               <span class="slider-name">Brain Cortex Opacity</span>
               <span id="brain-opacity-display" class="slider-counter">30%</span>
             </div>
-            <input type="range" id="brain-opacity-slider" min="5" max="100" value="30">
+            <input type="range" id="brain-opacity-slider" min="5" max="100" value="30" aria-label="Brain cortex opacity">
           </div>
         </div>
       </section>
@@ -309,12 +311,12 @@
           </div>
 
           <!-- AI Validation & Dice Scorecard -->
-          <div class="accuracy-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-inner); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="accuracy-card">
+            <div class="accuracy-row">
               <span class="input-label" style="color: var(--accent-primary);">AI Validation Agreement</span>
-              <span id="kpi-dice" class="badge-tag" style="background: rgba(56, 189, 248, 0.15); color: #fff; font-size: 0.76rem;">Dice: --</span>
+              <span id="kpi-dice" class="badge-tag">Dice: --</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
+            <div class="accuracy-row-secondary">
               <span>Volume Discrepancy:</span>
               <span id="kpi-mismatch" style="color: var(--necrotic-rose);">-- cm³</span>
             </div>
@@ -417,7 +419,7 @@
           </div>
 
           <!-- Unity & 3D Export Bridge -->
-          <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+          <div class="export-bridge">
             <span class="input-label">3D Engine & VR Export</span>
             <a id="download-glb-btn" href="#" class="btn-accent-action" style="width: 100%;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

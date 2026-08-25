@@ -878,3 +878,160 @@ input[type="range"]::-webkit-slider-thumb:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ------------------------------------------------------------------ */
+/* Extracted form & layout utilities (moved out of inline styles)      */
+/* ------------------------------------------------------------------ */
+
+.dataset-form {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-push-right {
+  margin-left: auto;
+}
+
+.upload-form {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upload-name-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.upload-submit {
+  align-self: flex-end;
+}
+
+.panel-select {
+  padding: 4px 8px;
+  font-size: 0.74rem;
+}
+
+.accuracy-card {
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--radius-inner);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accuracy-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.accuracy-row-secondary {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.accuracy-card .badge-tag {
+  background: rgba(56, 189, 248, 0.15);
+  color: #fff;
+  font-size: 0.76rem;
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions-bar-group {
+  display: flex;
+  gap: 6px;
+}
+
+.export-bridge {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Engine status variants */
+.system-badge.checking .status-pulse {
+  background: var(--enhancing-amber);
+  box-shadow: 0 0 10px var(--enhancing-amber);
+}
+
+.system-badge.offline .status-pulse {
+  background: var(--necrotic-rose);
+  box-shadow: 0 0 10px var(--necrotic-rose);
+}
+
+/* Status banner variants */
+.pipeline-status-banner.error {
+  background: rgba(244, 63, 94, 0.07);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: var(--necrotic-rose);
+}
+
+.pipeline-status-banner.warning {
+  background: rgba(245, 158, 11, 0.07);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--enhancing-amber);
+}
+
+/* 3D HUD error state */
+.hud-badge.error {
+  color: var(--necrotic-rose);
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* Slice image loading fade */
+.viewport-frame-2d img {
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.viewport-frame-2d img.loading {
+  opacity: 0.3;
+}
+
+/* Keyboard focus visibility */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.select-input:focus-visible,
+.text-input:focus-visible {
+  outline: none; /* custom focus ring provided on hover/focus rule above */
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

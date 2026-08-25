@@ -117,6 +117,16 @@ def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
+@app.get("/api/health")
+def health():
+    """Reports backend and AI model availability for the UI status indicator."""
+    return {
+        "status": "ok",
+        "model_loaded": bool(getattr(inference_engine, "is_trained", False)),
+        "device": str(inference_engine.device),
+    }
+
+
 @app.get("/api/patients")
 def list_patients():
     """Lists dataset cases plus any user-uploaded cases."""
@@ -286,17 +296,18 @@ def get_patient_analytics(patient_id: str, source: str = Query("model")):
     pred_vol = ensure_prediction(files, patient_id)
     gt_vol = nib.load(files['seg']).get_fdata(dtype=np.float32) if files.get('seg') else None
 
-    # Calculate Dice coefficient if Ground Truth is present
+    # Calculate Dice coefficient if Ground Truth is present using memory-efficient scalar arithmetic
     dice_score = None
     mismatch_cm3 = None
     if gt_vol is not None:
-        gt_wt = (gt_vol > 0)
-        pred_wt = (pred_vol > 0)
-        intersection = (gt_wt & pred_wt).sum()
-        total_wt = gt_wt.sum() + pred_wt.sum()
-        if total_wt > 0:
-            dice_score = round(float((2.0 * intersection) / total_wt * 100.0), 1)
-        mismatch_cm3 = round(float((gt_wt ^ pred_wt).sum() * 0.001), 2)
+        gt_wt_count = int((gt_vol > 0).sum())
+        pred_wt_count = int((pred_vol > 0).sum())
+        intersection_count = int(((gt_vol > 0) & (pred_vol > 0)).sum())
+        total_count = gt_wt_count + pred_wt_count
+        if total_count > 0:
+            dice_score = round(float((2.0 * intersection_count) / total_count * 100.0), 1)
+            mismatch_voxels = gt_wt_count + pred_wt_count - (2 * intersection_count)
+            mismatch_cm3 = round(float(mismatch_voxels * 0.001), 2)
 
     seg_vol = gt_vol if source == "ground_truth" and gt_vol is not None else pred_vol
 
@@ -309,6 +320,7 @@ def get_patient_analytics(patient_id: str, source: str = Query("model")):
     tumor_stats = {
         'patient_id': patient_id,
         'source': source,
+        'volume_shape': [int(v) for v in flair_vol.shape],
         'brain_volume_cm3': round(brain_volume_cm3, 2),
         'whole_tumor_cm3': wt_cm3,
         'edema_cm3': round(ed_voxels * 0.001, 2),
