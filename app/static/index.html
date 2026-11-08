@@ -434,6 +434,25 @@
               Download .OBJ Mesh Archive
             </a>
           </div>
+
+          <!-- Phase 2: 6-DOF Surgical Tool Tracking & AR Navigation -->
+          <div class="export-bridge" style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="input-label" style="color: var(--accent-primary); font-weight: 600;">Phase 2: 6-DOF Surgical Tracking</span>
+              <span class="badge-tag" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-primary);">Active</span>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+              Track an operational stylus pen with a multi-face dice in 6-DOF and spawn this patient's 3D brain in live AR with real-time margin alerts.
+            </p>
+            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+              <a href="/api/surgical_tracking/print_sheet" download="surgical_navigation_all_in_one_sheet.pdf" class="btn-accent-action" style="flex: 1; font-size: 11px; padding: 6px 8px; justify-content: center; text-decoration: none;">
+                Download All-in-One Print Sheet (PDF)
+              </a>
+            </div>
+            <code style="display: block; font-size: 10px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; color: #a5f3fc; overflow-x: auto; white-space: nowrap;">
+              python -m surgical_tracking.surgical_navigation_app
+            </code>
+          </div>
         </div>
       </aside>
 

@@ -45,9 +45,10 @@ flowchart TD
         B2 --> B4[Unity 3D Model Loader]
     end
 
-    subgraph Stage 3: Surgical Navigation & Tool Tracking [roadmap — not implemented]
-        C1[Tracked Instrument Markers]
-        C2[Trajectory Planning]
+    subgraph Stage 3: Surgical Navigation & 6-DOF Tool Tracking [implemented]
+        C1[Multi-Faced Fiducial Cube Stylus] --> C2[Joint solvePnP 6-DOF Multi-Marker Pose Fusion]
+        C2 --> C3[Tool Tip & Trajectory Laser Vector]
+        C3 --> C4[Augmented Reality Brain & Tumor Margin Telemetry]
     end
 ```
 
@@ -55,7 +56,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Stage 1 — AI Segmentation** | ✅ Implemented | Slice-wise 2D U-Net inference across each volume using overlapping tiles; predictions are constrained to an extracted brain mask. |
 | **Stage 2 — 3D Reconstruction & Visualization** | ✅ Implemented | Marching Cubes converts voxel masks into meshes; exports `.GLB`/`.OBJ`/`.STL`; served through FastAPI to a Three.js workstation or loadable into Unity. |
-| **Stage 3 — Surgical Navigation** | 🚧 Roadmap | Instrument tracking and trajectory guidance are **not implemented** in this repository. |
+| **Stage 3 — Surgical Navigation & 6-DOF AR Tracking** | ✅ Implemented | Multi-face fiducial dice stylus tracking across 360° roll; tip computation; real-time AR brain overlay and proximity margin alarms. |
 
 ---
 

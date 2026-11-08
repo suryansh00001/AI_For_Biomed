@@ -540,6 +540,58 @@ async def upload_custom_mri(
         raise HTTPException(status_code=500, detail=f"Upload processing failed: {e}")
 
 
+# ============================================================================
+# Phase 2: 6-DOF Surgical Tool Tracking & AR Navigation API Endpoints
+# ============================================================================
+SURGICAL_MARKERS_DIR = os.path.join(PROJECT_ROOT, "surgical_tracking", "printable_markers")
+
+@app.get("/api/surgical_tracking/print_sheet")
+def get_printable_single_sheet():
+    """Serves the all-in-one single-page printable PDF containing the Cube Net and Patient Anchor."""
+    pdf_path = os.path.join(SURGICAL_MARKERS_DIR, "surgical_navigation_all_in_one_sheet.pdf")
+    if not os.path.exists(pdf_path):
+        from surgical_tracking.generate_single_page_print import generate_single_page_sheet
+        generate_single_page_sheet(SURGICAL_MARKERS_DIR)
+    return FileResponse(pdf_path, media_type="application/pdf", filename="surgical_navigation_all_in_one_sheet.pdf")
+
+
+@app.get("/api/surgical_tracking/cube_net")
+def get_printable_cube_net():
+    """Serves the ready-to-print foldable Cube Net template for the surgical stylus."""
+    net_path = os.path.join(SURGICAL_MARKERS_DIR, "printable_cube_net_template.png")
+    if not os.path.exists(net_path):
+        from surgical_tracking.marker_generator import generate_marker_suite
+        generate_marker_suite(SURGICAL_MARKERS_DIR)
+    return FileResponse(net_path, media_type="image/png", filename="printable_cube_net_template.png")
+
+
+@app.get("/api/surgical_tracking/patient_anchor")
+def get_patient_anchor_marker():
+    """Serves the Patient Anchor Marker (ID 0) for AR brain spawning."""
+    anchor_path = os.path.join(SURGICAL_MARKERS_DIR, "patient_anchor_id_0.png")
+    if not os.path.exists(anchor_path):
+        from surgical_tracking.marker_generator import generate_marker_suite
+        generate_marker_suite(SURGICAL_MARKERS_DIR)
+    return FileResponse(anchor_path, media_type="image/png", filename="patient_anchor_id_0.png")
+
+
+@app.get("/api/surgical_tracking/config")
+def get_surgical_tracking_config():
+    """Returns the geometry and marker configuration for the surgical stylus."""
+    from surgical_tracking.config import SurgicalTrackingConfig
+    cfg = SurgicalTrackingConfig()
+    return {
+        "status": "ready",
+        "cube_size_mm": cfg.cube_size_mm,
+        "marker_size_mm": cfg.marker_size_mm,
+        "pen_length_mm": cfg.pen_length_mm,
+        "aruco_dict": "DICT_4X4_50",
+        "patient_anchor_id": cfg.patient_anchor_id,
+        "face_markers": cfg.face_marker_ids,
+        "safety_margin_mm": cfg.safety_margin_mm
+    }
+
+
 if __name__ == "__main__":
     host = os.environ.get("BRATS_HOST", "127.0.0.1")
     port = int(os.environ.get("BRATS_PORT", "8000"))
